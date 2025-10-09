@@ -1,0 +1,14 @@
+{
+  "title": "Bubble Card Tools",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Bubble Card Tools",
+        "description": "Create the integration to enable YAML module management."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only a single instance is allowed."
+    }
+  }
+}
