@@ -1,6 +1,6 @@
 # Bubble Card Tools
 
-**Bubble Card Tools** is the companion backend for **Bubble Card**. It adds a safe, local API that installs, edits, and removes Bubble Card modules as clean YAML files. It powers the **Module Store** and is **required** to manage modules from the UI.
+**Bubble Card Tools** is the companion backend for **Bubble Card**. It adds a safe, local API that installs, edits, and removes Bubble Card modules as separated YAML files. It powers the **Module Store** and is **required** to manage modules from the UI.
 It is designed to grow with new features.
 
 ## Requirements
