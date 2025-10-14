@@ -19,6 +19,8 @@ It is designed to grow with new features.
 
 ## Configure in Home Assistant
 
+<a href="https://my.home-assistant.io/redirect/config_flow_start?domain=bubble_card_tools" class="my badge" target="_blank"><img src="https://my.home-assistant.io/badges/config_flow_start.svg"></a>
+
 1. Go to **Settings → Devices & Services → Add Integration**
 2. Search **Bubble Card Tools** and add it
 3. The integration creates the base path:
