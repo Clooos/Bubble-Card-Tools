@@ -1,10 +1,10 @@
 {
   "domain": "bubble_card_tools",
   "name": "Bubble Card Tools",
-  "version": "1.0.0",
+  "codeowners": ["@Clooos"],
+  "config_flow": true,
   "documentation": "https://github.com/Clooos/Bubble-Card-Tools",
   "iot_class": "local_push",
-  "codeowners": ["@Clooos"],
   "requirements": [],
-  "config_flow": true
+  "version": "1.0.0"
 }
