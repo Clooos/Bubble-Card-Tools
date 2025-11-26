@@ -57,6 +57,9 @@ This method allows you to get updates directly on the HACS main page
 
 </details>
 
+> [!IMPORTANT]  
+> **This custom integration is still not available by default in HACS**, so please follow the steps above to add the repository to HACS.
+
 <br>
 
 ## Configure in Home Assistant
