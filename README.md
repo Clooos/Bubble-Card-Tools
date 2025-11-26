@@ -59,20 +59,20 @@ This method allows you to get updates directly on the HACS main page
 
 <br>
 
-<a href="https://my.home-assistant.io/redirect/config_flow_start?domain=bubble_card_tools" class="my badge" target="_blank"><img src="https://my.home-assistant.io/badges/config_flow_start.svg"></a>
-
-<br>
-
 ## Configure in Home Assistant
 
-1. Go to **Settings → Devices & services → Add Integration**
-2. Search **Bubble Card Tools** and add it
-3. The integration creates the base path:
+1. Go to **Settings → Devices & services → Add Integration**  
+   **or** click on this button:
+   <br><br>
+   <a href="https://my.home-assistant.io/redirect/config_flow_start?domain=bubble_card_tools" class="my badge" target="_blank"><img src="https://my.home-assistant.io/badges/config_flow_start.svg"></a>
+
+3. Search **Bubble Card Tools** and add it
+4. The integration creates the base path:
 
    * Base: `/config/bubble_card`
    * Modules: `/config/bubble_card/modules`
 
-4. You are all set! Just check in the editor (in Modules) if the warning has been removed.
+5. You are all set! Just check in the editor (in Modules) if the warning has been removed.
   
 <br>
 
