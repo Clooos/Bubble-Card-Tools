@@ -87,12 +87,14 @@ This method allows you to get updates directly on the HACS main page
 * If legacy modules exist (sensor or `bubble-modules.yaml`), the migration will be made automatically
 * Migration keeps legacy data untouched for safe rollback
 * After migration, files become the single source
+* **If the migration haven't worked correctly**, remove the `/config/bubble_card` folder then refresh the page and wait a bit.
 
 <br>
 
 ## Troubleshooting
 
 * After install, **restart Home Assistant** and add the integration
+* If the migration haven't worked correctly, remove the `/config/bubble_card` folder then refresh the page and wait a bit.
 * If the UI says “Unknown command,” the integration is not loaded, check logs and folder paths
 * For support, include HA version, logs, and steps to reproduce
 
