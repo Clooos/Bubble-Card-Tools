@@ -64,7 +64,8 @@ This method allows you to get updates directly on the HACS main page
 
 ## Configure in Home Assistant
 
-**Check the installation steps above first**
+> [!IMPORTANT]  
+> **Before clicking on that big shiny button below, first check the installation steps above.**
 
 1. Go to **Settings → Devices & services → Add Integration**  
    **or** click on this button:
