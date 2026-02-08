@@ -24,8 +24,8 @@ It is designed to grow with new features.
     
     <br>
     
-    1. Copy the `bubble_card_tools` folder from `custom_components/bubble_card_tools/` into `/config/custom_components/`
-    2. Restart Home Assistant
+    - Copy the `bubble_card_tools` folder from `custom_components/bubble_card_tools/` into `/config/custom_components/`
+    - Restart Home Assistant
     
     <br>
     
@@ -39,23 +39,23 @@ It is designed to grow with new features.
     
     This method allows you to get updates directly on the HACS main page
     
-    1. In HACS, go to the menu in the top right corner, then go to "Custom repositories" (it will soon be added natively in HACS).
+    - In HACS, go to the menu in the top right corner, then go to "Custom repositories" (it will soon be added natively in HACS).
         
        <img width="301" height="475" alt="image" src="https://github.com/user-attachments/assets/0608c0fb-7f76-4007-a130-43d3244bc2e7" /><br><br>
     
-    2. Then add `https://github.com/Clooos/Bubble-Card-Tools` as the repository and select "Integration". After that, click on "Add".
+    - Then add `https://github.com/Clooos/Bubble-Card-Tools` as the repository and select "Integration". After that, click on "Add".
       
        <img width="583" height="249" alt="image" src="https://github.com/user-attachments/assets/8bc9c242-363d-4bfb-893a-449232a806a1" /><br><br>
     
-    3. Once it is added, click on "Cancel" next to the "Add" button.
+    - Once it is added, click on "Cancel" next to the "Add" button.
     
        <img width="598" height="78" alt="image" src="https://github.com/user-attachments/assets/c2ae8724-af22-4db1-acd0-a78ebf6dc744" /><br><br>
     
-    4. Now search for "Bubble Card Tools" and click on it. Then finally, click on the "Download" button in the bottom right corner to install it.
+    - Now search for "Bubble Card Tools" and click on it. Then finally, click on the "Download" button in the bottom right corner to install it.
     
        <img width="489" height="313" alt="image" src="https://github.com/user-attachments/assets/f2b71cdf-b5f0-4777-8390-40f6ae783e83" /><br><br>
     
-    5. Restart Home Assistant.<br><br>
+    - Restart Home Assistant.<br><br>
     
     </details>
 
