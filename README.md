@@ -1,4 +1,8 @@
-# Bubble Card Tools
+<picture>
+  <source media="(prefers-color-scheme: dark)" height="128" srcset="https://github.com/user-attachments/assets/0d228533-3f0a-4703-b735-b7aa64ffdc1a">
+  <source media="(prefers-color-scheme: light)" height="128" srcset="https://github.com/user-attachments/assets/18f536c3-ffb4-4a4b-8a8f-07c62ef4c9ff">
+  <img alt="Bubble Card Tools logo" src="[default-image.png](https://github.com/user-attachments/assets/18f536c3-ffb4-4a4b-8a8f-07c62ef4c9ff)">
+</picture><br><br>
 
 **Bubble Card Tools** is a custom integration for Home Assistant that handles the **Bubble Card** backend. It adds a safe, local API that installs, edits, and removes Bubble Card modules as separated YAML files. It powers the **Module Store** and is **required** to manage modules from the UI.
 It is designed to grow with new features.
