@@ -4,8 +4,8 @@
   "codeowners": ["@Clooos"],
   "config_flow": true,
   "documentation": "https://github.com/Clooos/Bubble-Card-Tools",
-  "issue_tracker": "https://github.com/Clooos/Bubble-Card-Tools/issues",
   "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Clooos/Bubble-Card-Tools/issues",
   "requirements": [],
   "version": "1.0.0"
 }
