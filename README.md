@@ -29,7 +29,6 @@ It is designed to grow with new features.
     <br>
     
     - Copy the `bubble_card_tools` folder from `custom_components/bubble_card_tools/` into `/config/custom_components/`
-    - Restart Home Assistant
     
     <br>
     
@@ -37,33 +36,23 @@ It is designed to grow with new features.
     
     <details>
     
-    <summary>With HACS (Recommended)<br><b>ℹ️ This custom integration is still not available by default in HACS</b>, so please expand the steps above to add the repository to HACS.</summary>
+    <summary>With HACS (Recommended)</summary>
     
     <br>
     
-    This method allows you to get updates directly on the HACS main page
+    This method allows you to get updates directly on the Home Assistant Community Store
     
-    - In HACS, go to the menu in the top right corner, then go to "Custom repositories" (it will soon be added natively in HACS).
-        
-       <img width="301" height="475" alt="image" src="https://github.com/user-attachments/assets/0608c0fb-7f76-4007-a130-43d3244bc2e7" /><br><br>
-    
-    - Then add `https://github.com/Clooos/Bubble-Card-Tools` as the repository and select "Integration". After that, click on "Add".
-      
-       <img width="583" height="249" alt="image" src="https://github.com/user-attachments/assets/8bc9c242-363d-4bfb-893a-449232a806a1" /><br><br>
-    
-    - Once it is added, click on "Cancel" next to the "Add" button.
-    
-       <img width="598" height="78" alt="image" src="https://github.com/user-attachments/assets/c2ae8724-af22-4db1-acd0-a78ebf6dc744" /><br><br>
-    
-    - Now search for "Bubble Card Tools" and click on it. Then finally, click on the "Download" button in the bottom right corner to install it.
-    
-       <img width="489" height="313" alt="image" src="https://github.com/user-attachments/assets/f2b71cdf-b5f0-4777-8390-40f6ae783e83" /><br><br>
-    
-    - Restart Home Assistant.<br><br>
+    - If HACS is not installed yet, download it following the instructions on [https://hacs.xyz/docs/setup/download/](https://hacs.xyz/docs/use/download/download/)
+    - Proceed to the HACS initial configuration following the instructions on [https://hacs.xyz/docs/configuration/basic](https://hacs.xyz/docs/configuration/basic)
+    - On your sidebar go to "HACS"
+    - Search for "Bubble Card Tools", or click on the blue button below
+    - Click on "Download"
     
     </details>
+    
+    [![Open Bubble Card Tools on Home Assistant Community Store (HACS).](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=clooos&repository=Bubble-Card-Tools&category=integration)
 
-2. Go to **Settings → Devices & services → Add Integration**  
+2. **Restart Home Assistant** then go to **Settings → Devices & services → Add Integration**  
    **or** click on this button:
    <br><br>
    <a href="https://my.home-assistant.io/redirect/config_flow_start?domain=bubble_card_tools" class="my badge" target="_blank"><img src="https://my.home-assistant.io/badges/config_flow_start.svg"></a>
