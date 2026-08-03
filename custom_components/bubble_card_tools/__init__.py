@@ -18,6 +18,7 @@ from .const import (
     DOMAIN,
     DEFAULT_BASE_RELATIVE_PATH,
     MODULES_SUBDIR,
+    EXTRA_MODULE_URL_SUBDIR,
     ALLOWED_EXTS,
     DEFAULT_MAX_BYTES,
     EVENT_UPDATED,
@@ -102,6 +103,39 @@ def read_module(hass: HomeAssistant, entry: Optional[ConfigEntry], name: str) ->
         _LOGGER.debug("YAML parse error for %s: %s", target.name, err)
     return {"name": target.relative_to(get_base_dir(hass)).as_posix(), "content": content, "parsed": parsed}
 
+def read_all_modules(hass: HomeAssistant, entry: Optional[ConfigEntry], names: Optional[list[str]] = None) -> list[dict[str, Any]]:
+    """Read many module files in a single call.
+
+    When ``names`` is given, only those files are read; otherwise every module
+    file is returned (same enumeration as ``list_modules``). A missing or
+    invalid entry is skipped rather than failing the whole batch, so one bad
+    file cannot break a cold boot. This collapses the ~50 per-file WS reads a
+    cold client does into one round-trip.
+    """
+    base_dir = get_base_dir(hass)
+    if names is None:
+        names = [f["name"] for f in list_modules(hass, entry)]
+    results: list[dict[str, Any]] = []
+    for name in names:
+        try:
+            _, target = _resolve_target_path(hass, name)
+            if not target.exists():
+                continue
+            content = target.read_text(encoding="utf-8")
+        except (OSError, ValueError):
+            continue
+        # Deliberately NOT parsing YAML here: a module's `code` field is the
+        # whole (hundreds of KB) bundle, so parsing every file server-side and
+        # ALSO shipping the parsed tree would duplicate the payload and add
+        # seconds of parse time to a cold boot. Ship raw content only; the
+        # client parses (it already did on the per-file path).
+        results.append({
+            "name": target.relative_to(base_dir).as_posix(),
+            "content": content,
+        })
+    _LOGGER.debug("Bulk-read %d module files", len(results))
+    return results
+
 def _fire_updated(hass: HomeAssistant, action: str, rel_name: str) -> None:
     """Thread-safe event fire from executor thread."""
     data = {"action": action, "name": rel_name, "ts": dt_util.utcnow().isoformat().replace("+00:00", "Z")}
@@ -135,11 +169,158 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     ensure_base_dir(hass)
     return True
 
+
+def _extract_extra_modules(hass: HomeAssistant, extra_dir: Path) -> None:
+    """Extract any ``extra_module_url`` JS declared inside stored module YAMLs.
+
+    A module file may carry an ``extra_module_url`` string alongside its
+    ``code`` field; it is written out as ``<module-stem>.js`` so the folder
+    scan in :func:`_register_extra_module_urls` serves and registers it. This
+    lets a plain module install provision an early frontend module with no
+    extra file for the user to drop in. BCT stays generic: it has no knowledge
+    of what the extracted JS does.
+    """
+    base_dir = get_base_dir(hass)
+    candidates = list(base_dir.glob("*.y*ml"))
+    modules_dir = base_dir / MODULES_SUBDIR
+    if modules_dir.exists():
+        candidates += list(modules_dir.glob("*.y*ml"))
+
+    for path in candidates:
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        # Module files have a single root key (the module name) -> its object.
+        for value in data.values():
+            js = value.get("extra_module_url") if isinstance(value, dict) else None
+            if not isinstance(js, str) or not js.strip():
+                continue
+            out = extra_dir / f"{path.stem}.js"
+            try:
+                if not out.exists() or out.read_text(encoding="utf-8") != js:
+                    out.write_text(js, encoding="utf-8")
+                    _LOGGER.debug("Extracted extra_module_url JS to %s", out.name)
+            except OSError:
+                pass
+
+
+async def _register_extra_module_urls(hass: HomeAssistant) -> None:
+    """Serve and early-register any JS placed in the extra_module_url folder.
+
+    Files dropped in ``<base>/extra_module_url/*.js`` are served over HTTP and
+    registered with the frontend as ES module URLs (``extra_module_url``), so
+    they execute during the frontend bootstrap, before the Lovelace panel and
+    its cards render. This is a generic hook for early frontend code; BCT has
+    no knowledge of what the modules do.
+
+    Registration happens at setup, so an integration reload (or a restart)
+    picks up newly deployed or changed files. The ``?v=<mtime>`` query busts
+    the browser cache when a file is redeployed; the previous versioned URL of
+    the same file is unregistered so index.html never accumulates stale
+    entries. A failure here is swallowed by the caller so it can never block
+    the rest of the integration.
+    """
+    from homeassistant.components.http import StaticPathConfig
+    from homeassistant.components.frontend import add_extra_js_url
+
+    try:
+        from homeassistant.components.frontend import remove_extra_js_url
+    except ImportError:  # very old HA: accumulating one stale URL is harmless
+        remove_extra_js_url = None
+
+    base_dir = ensure_base_dir(hass)
+    extra_dir = base_dir / EXTRA_MODULE_URL_SUBDIR
+    if not extra_dir.exists():
+        extra_dir.mkdir(parents=True, exist_ok=True)
+
+    # Provision JS carried inside installed module YAMLs before scanning.
+    _extract_extra_modules(hass, extra_dir)
+
+    url_prefix = f"/{DOMAIN}/{EXTRA_MODULE_URL_SUBDIR}"
+
+    # Public static serving of the folder (register the path once per process).
+    # cache_headers=True: the URLs are mtime-versioned (?v=), so long-lived
+    # browser caching is safe AND essential — without it every page load
+    # refetches the module over the network, and on remote access that delay
+    # pushes its execution past the first paint (the HA launch screen becomes
+    # visible before the module can act). Served from disk cache, a module
+    # executes before the first paint.
+    if not hass.data.get(f"{DOMAIN}_extra_static"):
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(url_prefix, str(extra_dir), True)]
+        )
+        hass.data[f"{DOMAIN}_extra_static"] = True
+
+    # Register each JS module, one live URL per file: on a redeploy (new
+    # mtime -> new URL) the previous URL is unregistered first.
+    registered = hass.data.get(f"{DOMAIN}_extra_js")
+    if not isinstance(registered, dict):  # migrate the pre-1.1 set shape
+        registered = hass.data[f"{DOMAIN}_extra_js"] = {}
+    for path in sorted(extra_dir.glob("*.js")):
+        try:
+            mtime = int(path.stat().st_mtime)
+        except OSError:
+            continue
+        url = f"{url_prefix}/{path.name}?v={mtime}"
+        old = registered.get(path.name)
+        if old == url:
+            continue
+        if old and remove_extra_js_url is not None:
+            try:
+                remove_extra_js_url(hass, old)
+            except Exception:  # noqa: BLE001
+                pass
+        add_extra_js_url(hass, url)
+        registered[path.name] = url
+        _LOGGER.debug("Registered extra module URL: %s", url)
+
+def _register_media_mime_types() -> None:
+    """Register common media container mime types missing from Python's map.
+
+    Home Assistant's Jellyfin media_source silently drops any item whose
+    file path has no guessable mime type (mimetypes.guess_type), which
+    hides whole seasons of .mkv episodes from media browsers. Registering
+    the missing types here fixes browsing for the whole HA process.
+    """
+    import mimetypes
+
+    for mime, ext in (
+        ("video/x-matroska", ".mkv"),
+        ("audio/x-matroska", ".mka"),
+        ("video/x-m4v", ".m4v"),
+        ("video/mp2t", ".ts"),
+        ("video/mp2t", ".m2ts"),
+        ("audio/opus", ".opus"),
+        ("video/ogg", ".ogv"),
+        ("audio/aac", ".aac"),
+        ("video/x-flv", ".flv"),
+        ("video/x-ms-wmv", ".wmv"),
+    ):
+        if not mimetypes.guess_type(f"media{ext}")[0]:
+            mimetypes.add_type(mime, ext)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("Setting up Bubble Card Tools")
     ensure_base_dir(hass)
+    _register_media_mime_types()
+    # Serve + early-register frontend modules dropped in the extra_module_url
+    # folder. Never fatal: a failure must not stop the WS API / proxy below.
+    try:
+        await _register_extra_module_urls(hass)
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("Failed to register extra module URLs")
     from . import websocket_api as wsapi
     wsapi.async_register_api(hass, entry)
+    # Authenticated LAN artwork proxy (see image_proxy.py). Guarded so an
+    # integration reload does not register the view twice.
+    if not hass.data.get(f"{DOMAIN}_image_proxy"):
+        from .image_proxy import BubbleImageProxyView
+        hass.http.register_view(BubbleImageProxyView())
+        hass.data[f"{DOMAIN}_image_proxy"] = True
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
