@@ -11,6 +11,7 @@ import yaml
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
@@ -26,6 +27,10 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# There is nothing to configure in YAML: the integration is set up from its
+# config entry, and async_setup only creates the base folder.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 def get_base_dir(hass: HomeAssistant) -> Path:
     base = Path(hass.config.path(DEFAULT_BASE_RELATIVE_PATH)).resolve()
