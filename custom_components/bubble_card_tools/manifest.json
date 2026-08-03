@@ -3,9 +3,10 @@
   "name": "Bubble Card Tools",
   "codeowners": ["@Clooos"],
   "config_flow": true,
+  "dependencies": ["frontend"],
   "documentation": "https://github.com/Clooos/Bubble-Card-Tools",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/Clooos/Bubble-Card-Tools/issues",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
