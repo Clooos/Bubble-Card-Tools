@@ -171,7 +171,8 @@ def delete_module(hass: HomeAssistant, entry: Optional[ConfigEntry], name: str) 
     return {"name": target.name, "status": "deleted"}
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    ensure_base_dir(hass)
+    # Disk work (exists/mkdir) must stay off the event loop.
+    await hass.async_add_executor_job(ensure_base_dir, hass)
     return True
 
 
@@ -180,7 +181,7 @@ def _extract_extra_modules(hass: HomeAssistant, extra_dir: Path) -> None:
 
     A module file may carry an ``extra_module_url`` string alongside its
     ``code`` field; it is written out as ``<module-stem>.js`` so the folder
-    scan in :func:`_register_extra_module_urls` serves and registers it. This
+    scan in :func:`_provision_extra_dir` serves and registers it. This
     lets a plain module install provision an early frontend module with no
     extra file for the user to drop in. BCT stays generic: it has no knowledge
     of what the extracted JS does.
@@ -212,6 +213,31 @@ def _extract_extra_modules(hass: HomeAssistant, extra_dir: Path) -> None:
                 pass
 
 
+def _provision_extra_dir(hass: HomeAssistant) -> tuple[Path, list[tuple[str, int]]]:
+    """Blocking half of the extra_module_url registration (executor only).
+
+    Creates the folders, extracts any JS embedded in installed module YAMLs,
+    and returns the folder plus the (name, mtime) list of JS files to serve.
+    Everything that touches the disk lives here so the async half never
+    blocks the event loop.
+    """
+    base_dir = ensure_base_dir(hass)
+    extra_dir = base_dir / EXTRA_MODULE_URL_SUBDIR
+    if not extra_dir.exists():
+        extra_dir.mkdir(parents=True, exist_ok=True)
+
+    # Provision JS carried inside installed module YAMLs before scanning.
+    _extract_extra_modules(hass, extra_dir)
+
+    js_files: list[tuple[str, int]] = []
+    for path in sorted(extra_dir.glob("*.js")):
+        try:
+            js_files.append((path.name, int(path.stat().st_mtime)))
+        except OSError:
+            continue
+    return extra_dir, js_files
+
+
 async def _register_extra_module_urls(hass: HomeAssistant) -> None:
     """Serve and early-register any JS placed in the extra_module_url folder.
 
@@ -227,6 +253,10 @@ async def _register_extra_module_urls(hass: HomeAssistant) -> None:
     the same file is unregistered so index.html never accumulates stale
     entries. A failure here is swallowed by the caller so it can never block
     the rest of the integration.
+
+    The disk scan runs in the executor (:func:`_provision_extra_dir`): reading
+    the module YAMLs from the event loop trips Home Assistant's blocking-call
+    detector.
     """
     from homeassistant.components.http import StaticPathConfig
     from homeassistant.components.frontend import add_extra_js_url
@@ -236,13 +266,7 @@ async def _register_extra_module_urls(hass: HomeAssistant) -> None:
     except ImportError:  # very old HA: accumulating one stale URL is harmless
         remove_extra_js_url = None
 
-    base_dir = ensure_base_dir(hass)
-    extra_dir = base_dir / EXTRA_MODULE_URL_SUBDIR
-    if not extra_dir.exists():
-        extra_dir.mkdir(parents=True, exist_ok=True)
-
-    # Provision JS carried inside installed module YAMLs before scanning.
-    _extract_extra_modules(hass, extra_dir)
+    extra_dir, js_files = await hass.async_add_executor_job(_provision_extra_dir, hass)
 
     url_prefix = f"/{DOMAIN}/{EXTRA_MODULE_URL_SUBDIR}"
 
@@ -264,13 +288,9 @@ async def _register_extra_module_urls(hass: HomeAssistant) -> None:
     registered = hass.data.get(f"{DOMAIN}_extra_js")
     if not isinstance(registered, dict):  # migrate the pre-1.1 set shape
         registered = hass.data[f"{DOMAIN}_extra_js"] = {}
-    for path in sorted(extra_dir.glob("*.js")):
-        try:
-            mtime = int(path.stat().st_mtime)
-        except OSError:
-            continue
-        url = f"{url_prefix}/{path.name}?v={mtime}"
-        old = registered.get(path.name)
+    for name, mtime in js_files:
+        url = f"{url_prefix}/{name}?v={mtime}"
+        old = registered.get(name)
         if old == url:
             continue
         if old and remove_extra_js_url is not None:
@@ -279,7 +299,7 @@ async def _register_extra_module_urls(hass: HomeAssistant) -> None:
             except Exception:  # noqa: BLE001
                 pass
         add_extra_js_url(hass, url)
-        registered[path.name] = url
+        registered[name] = url
         _LOGGER.debug("Registered extra module URL: %s", url)
 
 def _register_media_mime_types() -> None:
@@ -310,7 +330,7 @@ def _register_media_mime_types() -> None:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("Setting up Bubble Card Tools")
-    ensure_base_dir(hass)
+    await hass.async_add_executor_job(ensure_base_dir, hass)
     _register_media_mime_types()
     # Serve + early-register frontend modules dropped in the extra_module_url
     # folder. Never fatal: a failure must not stop the WS API / proxy below.
